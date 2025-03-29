@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard de Propiedades</title>
+    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            margin-top: 20px;
+        }
+
+        table {
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1 class="text-center">Dashboard de Propiedades</h1>
+
+        <div class="mb-3">
+            <button class="btn btn-primary" id="download-xml">Descargar XML</button>
+        </div>
+
+        <table class="table table-bordered" id="properties-list">
+            <thead>
+                <tr>
+                    <th>UniqueID</th>
+                    <th>Precio</th>
+                    <th>Estado</th>
+                    <th>Dirección</th>
+                    <th>Dormitorios</th>
+                    <th>Baños</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                <!-- Aquí se llenarán las propiedades -->
+            </tbody>
+        </table>
+
+        <!-- Modal para ver detalles de la propiedad -->
+        <div class="modal" tabindex="-1" role="dialog" id="property-modal">
+            <div class="modal-dialog" role="document">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="property-name"></h5>
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                    </div>
+                    <div class="modal-body">
+                        <p><strong>Descripción:</strong> <span id="property-description"></span></p>
+                        <p><strong>Características:<br /></strong> <span id="property-features"></span></p>
+                        <p><strong>Agente:</strong> <span id="agent-name"></span></p>
+                        <p><strong>Teléfono:</strong> <span id="agent-phone"></span></p>
+                        <p><strong>Correo:</strong> <span id="agent-email"></span></p>
+                        <!-- Contenedor para las imágenes de la propiedad -->
+                        <div id="property-images"></div>
+                        <!-- Contenedor para el plano de piso -->
+                        <div id="property-floorplan"></div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal">Cerrar</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.4/dist/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+    <script>
+        // Cargar las propiedades al inicio
+        document.addEventListener('DOMContentLoaded', () => {
+            fetch('http://localhost:3000/api/properties')
+                .then(response => response.json())
+                .then(data => {
+                    const tableBody = document.querySelector('#properties-list tbody');
+                    data.forEach(property => {
+                        const row = document.createElement('tr');
+                        row.innerHTML = `
+              <td>${property.uniqueID}</td>
+              <td>${property.price}</td>
+              <td>${property.status}</td>
+              <td>${property.street}, ${property.suburb}</td>
+              <td>${property.bedrooms}</td>
+              <td>${property.bathrooms}</td>
+              <td><button class="btn btn-info btn-sm" onclick="viewPropertyDetails('${property.uniqueID}')">Ver Detalles</button></td>
+            `;
+                        tableBody.appendChild(row);
+                    });
+                });
+        });
+
+
+        // Ver detalles de la propiedad en el modal
+        function viewPropertyDetails(id) {
+            fetch(`http://localhost:3000/api/properties/${id}`)
+                .then(response => response.json())
+                .then(property => {
+                    // Verificar la estructura completa de la propiedad
+                    console.log('Propiedad recibida:', property);
+
+                    // Verificar que los datos lleguen
+                    document.getElementById('property-name').textContent = property.headline || 'Sin título';
+                    document.getElementById('property-description').textContent = property.description || 'Sin descripción';
+
+                    // Mostrar características (facilities)
+                    let facilities = {};
+                    try {
+                        console.log('Intentando parsear facilities:', property.facilities);
+                        facilities = JSON.parse(property.facilities || '{}');  // Parsear el JSON
+                        console.log('facilities parsed:', facilities);  // Log para depuración
+                    } catch (e) {
+                        console.error('Error al parsear las instalaciones:', e);
+                    }
+
+                    // Generar la cadena de texto para las facilities
+                    let facilitiesText = '';
+                    Object.keys(facilities).forEach(key => {
+                        if (facilities[key] === 0) {
+                            facilitiesText += `${key}: no <br>`;
+                        } else {
+                            facilitiesText += `${key}: ${facilities[key]} <br>`;
+                        }
+                    });
+
+                    // Mostrar las facilities en el modal
+                    document.getElementById('property-features').innerHTML = facilitiesText || 'No features available';
+
+                    // Agente
+                    document.getElementById('agent-name').textContent = property.agent_name || 'No disponible';
+                    document.getElementById('agent-phone').textContent = property.agent_phone || 'No disponible';
+                    document.getElementById('agent-email').textContent = property.agent_email || 'No disponible';
+
+                    // Mostrar imágenes
+                    const imagesContainer = document.getElementById('property-images');
+                    imagesContainer.innerHTML = '';  // Limpiar imágenes anteriores
+                    let images = [];
+                    try {
+                        // Parsear la galería solo si es un string con formato de array
+                        images = property.gallery ? JSON.parse(property.gallery) : [];
+                        console.log('Imágenes parsed:', images);
+                    } catch (e) {
+                        console.error('Error al parsear las imágenes:', e);
+                    }
+                    images.forEach(img => {
+                        const imgElement = document.createElement('img');
+                        imgElement.src = img;  // Aquí le pasamos la URL directamente
+                        imgElement.alt = 'Imagen de la propiedad';
+                        imgElement.classList.add('img-fluid', 'mb-2');
+                        imagesContainer.appendChild(imgElement);
+                    });
+
+                    // Mostrar plano de piso
+                    const floorplanContainer = document.getElementById('property-floorplan');
+                    floorplanContainer.innerHTML = '';  // Limpiar plano de piso anterior
+                    let floorplans = [];
+                    try {
+                        // Parsear el plano de piso solo si es un string con formato de array
+                        floorplans = property.floorplan ? JSON.parse(property.floorplan) : [];
+                        console.log('Plano de piso parsed:', floorplans);
+                    } catch (e) {
+                        console.error('Error al parsear el plano de piso:', e);
+                    }
+                    floorplans.forEach(fp => {
+                        const fpElement = document.createElement('img');
+                        fpElement.src = fp.url || fp;  // Usar URL directamente
+                        fpElement.alt = 'Plano de la propiedad';
+                        fpElement.classList.add('img-fluid', 'mb-2');
+                        floorplanContainer.appendChild(fpElement);
+                    });
+
+                    // Mostrar el modal
+                    $('#property-modal').modal('show');
+                })
+                .catch(err => {
+                    console.error('Error al obtener los detalles de la propiedad:', err);
+                });
+        }
+
+
+
+
+
+
+
+        // Descargar el XML
+        document.getElementById('download-xml').addEventListener('click', () => {
+            window.location.href = 'http://localhost:3000/feed';
+        });
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,23 @@
+{
+  "name": "real-xml-solution",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "type": "module",
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^4.21.2",
+    "fast-xml-parser": "^5.0.9",
+    "json2csv": "^6.0.0-alpha.2",
+    "node-cron": "^3.0.3",
+    "sqlite": "^5.1.1",
+    "sqlite3": "^5.1.7",
+    "xlsx": "^0.18.5"
+  }
+}
