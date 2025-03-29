@@ -1,0 +1,19 @@
+# node
+node_modules/
+.env
+.DS_Store
+
+# database
+database/properties.db
+
+# output
+output/*.xml
+
+# input
+input/*.xml
+
+# logs
+logs/*.log
+
+# sistema operativo
+Thumbs.db
